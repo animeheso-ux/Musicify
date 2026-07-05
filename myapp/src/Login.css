@@ -1,0 +1,82 @@
+@keyframes GlowAnim {
+    from {filter: drop-shadow(0 0 5px white);}
+    to {filter: drop-shadow(0 0 25px rgb(203, 136, 215));}
+}
+
+
+body {
+    background-image: linear-gradient(rgb(207, 139, 207,0.3),rgba(0, 0, 0, 0.5)),url("assets/sakurabackground2.jpg");
+    overflow: hidden;
+}
+
+.LoginContainer {
+    border : 5px solid transparent;
+
+
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+
+    transform: translate(-50%,-50%);
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    gap: 16px;
+
+
+    height: 50vh;
+    width: 40vw;
+}
+
+
+textarea {
+    border-radius: 5px;
+    resize: none;
+    width: 20vw;
+    height: 3vh;
+}
+
+textarea::placeholder {
+    color: grey;
+}
+
+
+button {
+    border-radius: 5px;
+    border: 5px solid transparent;
+}
+
+button.LoginButton {
+    width: 8vw;
+    height: 4vh;
+}
+
+
+h1 {
+    color: white;
+}
+
+h1.MainHeader {
+    position: absolute;
+    top : -35%;
+    background-image: linear-gradient(rgba(255,255,255,0.7),rgba(248, 161, 248, 0.7));
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    height: 15vh;
+}
+
+h1.MainHeader:hover {
+    animation: GlowAnim 2s infinite reverse;
+}
+
+
+h2.MainHeader {
+    background-image: linear-gradient(rgba(255,255,255,0.7),rgba(248, 161, 248, 0.7));
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+}
+
