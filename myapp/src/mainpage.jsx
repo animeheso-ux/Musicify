@@ -2,7 +2,7 @@ import { useEffect , useState , useRef } from "react"
 import NavbarProp from "./navbar.jsx"
 import "./mainpage.css"
 
-function MainPage({ToLogin}) {
+function MainPage({ToLogin,ToViewPlaylist}) {
     const [MusicList,SetList] = useState([])
     const [Playing,ChangePlaying] = useState(false)
     const [DownloadState,ChangeDownloadState] = useState("Status:")
@@ -12,11 +12,28 @@ function MainPage({ToLogin}) {
     const [MaxDuration,setmax] = useState("0:00")
     const [VisualArray,SetVisualArray] = useState(Array(64).fill(0))
     const [CurrentSongName,SetSongName] = useState("")
+
+
+    const [playlists,setplaylist] = useState([])
+    const [currentPlaylistID,setCurrentPlayListID] = useState("")
+    
+
     const currentaudio = useRef(null)
     const AudioContextWF = useRef(null)
     const AnalyserWF = useRef(null)
     const UnitArrayWF = useRef(null)
     let songPosition = 0;
+
+
+        const renderplaylist = playlists.map((playlist)=> {
+        return (
+            <div className="playlist-container-mini">
+                <button className="playlist-container-mini" onClick={() => {setCurrentPlayListID(playlist.id),LoadPlaylist(playlist.id)}}>
+                    <h4>{playlist.name}</h4>
+                </button>
+            </div>
+        )
+    })
 
 
         const LoadVisualBars = VisualArray.map((value,index)=> {
@@ -72,6 +89,43 @@ function MainPage({ToLogin}) {
 
     
             return data.Token
+    }
+
+     async function GetPlaylist() {
+        const Token = await VerifyToken()
+
+        const response = await fetch(`/GetPlayList/${Token["id"]}`)
+
+        const data = await response.json()
+
+        setplaylist(data.result)
+    }
+
+    async function CreatePlaylist() {
+                const Token = await VerifyToken()
+
+        const response = await fetch(`/CreatePlaylist`,{
+            method : "POST",
+            headers : {
+                "Content-Type" : "application/json"
+            },
+            body :JSON.stringify({user_id : Token["id"]})
+        })
+
+        const data = await response.json()
+
+        if (data.status == "success") {
+            GetPlaylist()
+        }
+    }
+
+    async function LoadPlaylist(id) {
+        const response = await fetch(`/LoadPlaylist/${id}`)
+
+        const data = await response.json()
+
+
+        SetList(data.result)
     }
 
 
@@ -210,7 +264,7 @@ function PauseSong() {
         const response = await fetch("/DownloadSong",{
             method : "POST",
             headers : {"Content-Type" : "application/json"},
-            body : JSON.stringify({Link : InputText,user_id : Token["id"]})
+            body : JSON.stringify({Link : InputText,user_id : Token["id"],playlist_id : currentPlaylistID})
         })
 
         const data = await response.json()
@@ -281,12 +335,14 @@ function PauseSong() {
         SetList(data.result)
     }
 
-
     useEffect(()=> {
         if (MusicList.length == 0 && window.location.port == 3000) {
-            LoadMusic()
+                    GetPlaylist()
         }
     },[])
+
+
+
 
 
     return (
@@ -295,11 +351,20 @@ function PauseSong() {
             <NavbarProp></NavbarProp>
 
 
-             <div className="AddSong">
+        <div className="playlistContainer">
+            <button onClick={CreatePlaylist}>+ Create</button>
+            {renderplaylist}
+       </div>
+
+
+        <div className="AddSong">
         <input id="Input" type="text" placeholder="Paste youtube link to put in playlist:"></input>
         <button onClick={DownloadSongs}>submit</button>
         <p>{DownloadState || "Status:"}</p>
        </div>
+
+
+
 
        <button className="LogoutButton" onClick={Logout}>Log out</button>
 

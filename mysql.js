@@ -10,7 +10,7 @@ const router = express.Router()
 
 
 export const database = mysql.createConnection({
-host: 'localhost',
+host: "localhost",
 user: 'root',
 password: process.env.DB_PASSWORD,
 database: 'music_app'

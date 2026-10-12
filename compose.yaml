@@ -1,0 +1,23 @@
+services:
+ frontend-musicify:
+  build: /myapp
+  ports:
+   - "5173:5173"
+ backend-musicify:
+    build: ./
+    ports:
+    - "3000:3000"
+
+    environment:
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+
+ db:
+  image:  mysql:8.4
+  environment:
+    MYSQL_ROOT_PASSWORD : ${DB_PASSWORD}
+    MYSQL_DATABASE: music_app
+  ports:
+   - "3307:3306"
+
+

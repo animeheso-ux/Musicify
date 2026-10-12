@@ -5,9 +5,9 @@ import http from "http"
 import path from "path"
 import { fileURLToPath } from "node:url"
 
-import { database } from "./mysql.js"
 import mysqlroute from "./mysql.js"
 import MusicRoute from "./music.js"
+import PlaylistRoute from "./playlist.js"
 
 
 const app = express()
@@ -32,6 +32,7 @@ app.use(express.static(path.join(dirname,"myapp/dist")))
 
 app.use(mysqlroute)
 app.use(MusicRoute)
+app.use(PlaylistRoute)
 app.use(limiter)
 
 
@@ -52,6 +53,6 @@ exec("cd myapp && npm run build",(err)=> {
 })
 
 
-server.listen(PORT,()=> console.log("port connected"),exec(`start http://localhost:${PORT}`))
+server.listen(PORT,()=> console.log("started at http://localhost:3000"))
 
 
