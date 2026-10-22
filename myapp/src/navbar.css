@@ -17,10 +17,10 @@ a {
 
 .Icon {
     position: absolute;
-    top: -5%;
+    top: -10%;
     background-image: url("./assets/Icon.png");
     height: 7vh;
-    width: 10vw;
+    width: 8.5vw;
 
     background-size: contain;
     background-repeat: no-repeat;

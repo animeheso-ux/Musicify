@@ -16,7 +16,10 @@ function MainPage({ToLogin,ToViewPlaylist}) {
 
     const [playlists,setplaylist] = useState([])
     const [currentPlaylistID,setCurrentPlayListID] = useState("")
-    
+    const [currentPlaylistSelected,setSelected] = useState("")
+    const [newPlaylistName,setNewPlaylistName] = useState("")
+    const [editChangesContainer,setEditContainer] = useState(0)
+    const [edited,setEdited] = useState("")
 
     const currentaudio = useRef(null)
     const AudioContextWF = useRef(null)
@@ -28,8 +31,10 @@ function MainPage({ToLogin,ToViewPlaylist}) {
         const renderplaylist = playlists.map((playlist)=> {
         return (
             <div className="playlist-container-mini">
-                <button className="playlist-container-mini" onClick={() => {setCurrentPlayListID(playlist.id),LoadPlaylist(playlist.id)}}>
+                <button className="playlist-container-mini" onClick={() => {setSelected(playlist.name),setCurrentPlayListID(playlist.id),LoadPlaylist(playlist.id)}}>
                     <h4>{playlist.name}</h4>
+                    <button onClick={() => {setEditContainer(1),setEdited(playlist.name)}}>Edit</button>
+                    <button>Delete</button>
                 </button>
             </div>
         )
@@ -94,7 +99,11 @@ function MainPage({ToLogin,ToViewPlaylist}) {
      async function GetPlaylist() {
         const Token = await VerifyToken()
 
-        const response = await fetch(`/GetPlayList/${Token["id"]}`)
+        const response = await fetch(`/GetPlayList/${Token["id"]}`, {
+            headers : {
+                "authorization" : `Bearer ${localStorage.getItem("Token")}`
+            }
+        })
 
         const data = await response.json()
 
@@ -126,6 +135,24 @@ function MainPage({ToLogin,ToViewPlaylist}) {
 
 
         SetList(data.result)
+    }
+
+    async function editPlaylist() {
+        const Token = await VerifyToken()
+        setEditContainer(0)
+        const response = await fetch("/editPlaylist",{
+            method : "POST",
+            headers : {
+                "Content-Type" : "application/json"
+            },
+            body : JSON.stringify({name : edited,new_name : newPlaylistName,user_id : Token["id"]})
+        })
+
+        const data = await response.json()
+        console.log(data.status)
+        if (data.status == "success") {
+            GetPlaylist()
+        }
     }
 
 
@@ -249,7 +276,7 @@ function PauseSong() {
 
 
     async function DownloadSongs() {
-        const InputText = document.getElementById("Input")?.value
+        const InputText = document.getElementById("Input")?.value.trim()
         const Token = await VerifyToken()
 
         if (InputText.length == 0) {
@@ -290,13 +317,14 @@ function PauseSong() {
          const response = await fetch("/DeleteSong",{
         method : "POST",
         headers : {"Content-Type" : "application/json"},
-        body : JSON.stringify({song_id : song.id,user_id : Token["id"]})
+        body : JSON.stringify({song_id : song.id,user_id : Token["id"],playlist_id : currentPlaylistID})
     })
 
     const data = await response.json()
 
-
-    SetList(data.result)
+    if (data.status == "success") {
+        LoadPlaylist()
+    }
     }
 
     async function LoadMusic() {
@@ -335,6 +363,17 @@ function PauseSong() {
         SetList(data.result)
     }
 
+
+    document.addEventListener("contextmenu",(e)=> {
+        e.preventDefault()
+
+        console.log(e.target.className)
+
+        if (e.target.className == "playlist-container-mini") {
+
+        }
+    })
+
     useEffect(()=> {
         if (MusicList.length == 0 && window.location.port == 3000) {
                     GetPlaylist()
@@ -348,12 +387,18 @@ function PauseSong() {
     return (
         <div>
 
-            <NavbarProp></NavbarProp>
+            <NavbarProp Tologout={Logout}></NavbarProp>
+
 
 
         <div className="playlistContainer">
             <button onClick={CreatePlaylist}>+ Create</button>
             {renderplaylist}
+       </div>
+
+       <div className="editChanges" style={{opacity : editChangesContainer}}>
+        <input  placeholder="Change playlist name:" onChange={(e) => {setNewPlaylistName(e.target.value)}} ></input>
+        <button onClick={()=> {editPlaylist()}}>Edit</button>
        </div>
 
 
@@ -364,9 +409,6 @@ function PauseSong() {
        </div>
 
 
-
-
-       <button className="LogoutButton" onClick={Logout}>Log out</button>
 
        <div className="MusicDiv">
 

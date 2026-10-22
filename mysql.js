@@ -92,7 +92,7 @@ router.post("/Login",(req,res)=> {
 })
 
 
-const VerifyToken = (req,res,next)=> {
+export const VerifyToken = (req,res,next)=> {
     const header = req.headers["authorization"]
     const Token = header && header.split(" ")[1]
 

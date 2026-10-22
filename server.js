@@ -26,6 +26,8 @@ const limiter = rateLimit({
   legacyHeaders: false, // disable X-RateLimit headers
 })
 
+
+
 app.use(express.json())
 app.use("/MusicFolder",express.static("MusicFolder"))
 app.use(express.static(path.join(dirname,"myapp/dist")))
@@ -51,6 +53,8 @@ exec("cd myapp && npm run build",(err)=> {
 
     console.log("REACT LOADED")
 })
+
+
 
 
 server.listen(PORT,()=> console.log("started at http://localhost:3000"))

@@ -2,7 +2,7 @@ import express from "express"
 import ffmpegPath from "ffmpeg-static"
 import ytDlpExec from "yt-dlp-exec"
 import { fileURLToPath } from "node:url"
-
+import { GetRedisClient } from "./redis.js"
 
 import { database } from "./mysql.js"
 
@@ -69,8 +69,6 @@ router.post("/DownloadSong", async (req, res) => {
                     }
 
 
-
-
                     if (results.length == 0) {
 
                         database.query("INSERT INTO usersongs (user_id,song_id) VALUES(?,?)", [user_id, SONG_ID], (err, results) => {
@@ -101,14 +99,6 @@ router.post("/DownloadSong", async (req, res) => {
                 ffmpegLocation: ffmpegPath,
                 output: path.join(destination, "%(id)s.%(ext)s")
             })
-
-
-
-
-
-
-
-
 
             database.query("INSERT INTO songs (user_id,title,filename,song_id) VALUES(?,?,?,?) ", [user_id, info.title, videofile, info.id], (err, results) => {
                 if (err) {
@@ -152,12 +142,7 @@ router.post("/DownloadSong", async (req, res) => {
             res.json({ message: "success" })
         })
 
-
-
-
-
     }
-
 
 
     catch {
@@ -168,26 +153,37 @@ router.post("/DownloadSong", async (req, res) => {
 })
 
 
-router.post("/DeleteSong", (req, res) => {
-    const { song_id, user_id } = req.body
+router.post("/DeleteSong", async(req, res) => {
+    const { song_id, user_id , playlist_id } = req.body
+    const cache = await GetRedisClient()
 
     console.log(song_id)
 
-
-    database.query("DELETE FROM usersongs WHERE user_id = ? AND song_id = ?", [user_id, song_id], (err, results) => {
-        if (err) {
-            throw err
-        }
-    })
+    const session = await cache.get(`user${user_id}`)
 
 
-    database.query("SELECT S.user_id, S.filename, S.title,S.id FROM songs S INNER JOIN usersongs US ON S.id = US.song_id WHERE US.user_id = ?", [user_id], (err, results) => {
+    database.query("DELETE FROM usersongs WHERE user_id = ? AND song_id = ?", [user_id, song_id], async(err, results) => {
         if (err) {
             throw err
         }
 
-        res.json({ result: results })
+        if (session) {
+            await cache.del(`user${user_id}`)
+        }
+
+        database.query("DELETE FROM playlist_songs WHERE playlist_id =? AND song_id = ? ",[playlist_id,song_id],async(err,results)=> {
+            if (err) {
+                throw err
+            }
+
+                    res.status(200).json({status : "success"})
+        })
+
+
+
     })
+
+
 
 
 
