@@ -1,8 +1,9 @@
 import { useEffect , useState , useRef } from "react"
-import NavbarProp from "./navbar.jsx"
+import { useNavigate } from "react-router"
 import "./mainpage.css"
 
-function MainPage({ToLogin,ToViewPlaylist}) {
+function MainPage() {
+    const navigate = useNavigate()
     const [MusicList,SetList] = useState([])
     const [Playing,ChangePlaying] = useState(false)
     const [DownloadState,ChangeDownloadState] = useState("Status:")
@@ -18,7 +19,7 @@ function MainPage({ToLogin,ToViewPlaylist}) {
     const [currentPlaylistID,setCurrentPlayListID] = useState("")
     const [currentPlaylistSelected,setSelected] = useState("")
     const [newPlaylistName,setNewPlaylistName] = useState("")
-    const [editChangesContainer,setEditContainer] = useState(0)
+    const [editChangesContainer,setEditContainer] = useState(false)
     const [edited,setEdited] = useState("")
 
     const currentaudio = useRef(null)
@@ -28,12 +29,12 @@ function MainPage({ToLogin,ToViewPlaylist}) {
     let songPosition = 0;
 
 
-        const renderplaylist = playlists.map((playlist)=> {
+        const renderplaylist = playlists.map((playlist)=> { 
         return (
             <div className="playlist-container-mini">
                 <button className="playlist-container-mini" onClick={() => {setSelected(playlist.name),setCurrentPlayListID(playlist.id),LoadPlaylist(playlist.id)}}>
                     <h4>{playlist.name}</h4>
-                    <button onClick={() => {setEditContainer(1),setEdited(playlist.name)}}>Edit</button>
+                    <button onClick={() => {editChangesContainer ? (setEditContainer(false)) : (setEditContainer(true)),setEdited(playlist.name)}}>Edit</button>
                     <button>Delete</button>
                 </button>
             </div>
@@ -72,24 +73,13 @@ function MainPage({ToLogin,ToViewPlaylist}) {
 
 
     async function VerifyToken() {
-        const Token = localStorage.getItem("Token")
 
-        if (!Token) {
-            ToLogin()
-            return
-        }
-
-        const response = await fetch("/GetToken",{
-            headers : {
-                "authorization" : `Bearer ${Token}`,
-                "Content-Type" : "application/json"
-            }
-        })
+        const response = await fetch("/GetToken")
 
         const data = await response.json()
 
             if (data.status != "success") {
-                ToLogin()
+                navigate("/")
             }
 
     
@@ -99,11 +89,7 @@ function MainPage({ToLogin,ToViewPlaylist}) {
      async function GetPlaylist() {
         const Token = await VerifyToken()
 
-        const response = await fetch(`/GetPlayList/${Token["id"]}`, {
-            headers : {
-                "authorization" : `Bearer ${localStorage.getItem("Token")}`
-            }
-        })
+        const response = await fetch(`/GetPlayList/${Token["id"]}`)
 
         const data = await response.json()
 
@@ -156,12 +142,7 @@ function MainPage({ToLogin,ToViewPlaylist}) {
     }
 
 
-    function Logout() {
-        if (localStorage.getItem("Token")) {
-            localStorage.removeItem("Token")
-            ToLogin()
-        }
-    }
+
 
 
 
@@ -387,7 +368,6 @@ function PauseSong() {
     return (
         <div>
 
-            <NavbarProp Tologout={Logout}></NavbarProp>
 
 
 
@@ -396,11 +376,15 @@ function PauseSong() {
             {renderplaylist}
        </div>
 
-       <div className="editChanges" style={{opacity : editChangesContainer}}>
+       {editChangesContainer && (
+        <div className="editChanges" >
         <input  placeholder="Change playlist name:" onChange={(e) => {setNewPlaylistName(e.target.value)}} ></input>
         <button onClick={()=> {editPlaylist()}}>Edit</button>
        </div>
 
+       )}
+
+       
 
         <div className="AddSong">
         <input id="Input" type="text" placeholder="Paste youtube link to put in playlist:"></input>

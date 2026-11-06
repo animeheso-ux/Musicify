@@ -1,8 +1,27 @@
 import "./navbar.css"
 import sakuraflower from "./assets/sakura2.svg"
 import icon from "./assets/Icon.png"
+import { useNavigate , useLocation } from "react-router"
 
-function NavbarProp({Tologout}) {
+
+function NavbarProp() {
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  function Logout() {
+    const proceed = confirm("Log out of your account?")
+
+    if (!proceed) {return}
+
+          
+    if (  localStorage.getItem("Token")) {
+      localStorage.removeItem("Token")
+      navigate("/")
+    }
+
+  }
+
+
     return (
 <nav class=" navbar Navbar">
   <div class="container-fluid">
@@ -12,7 +31,7 @@ function NavbarProp({Tologout}) {
 
     <div className="ms-auto">
       <a class="navbar-brand MainHeader" href="/">About</a>
-    <a class="navbar-brand MainHeader" href="/" onClick={Tologout}>Logout</a>
+      {location.pathname == "/Home" && (    <a class="navbar-brand MainHeader" onClick={Logout}>Logout</a>)}
 
     </div>
 

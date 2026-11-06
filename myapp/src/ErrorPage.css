@@ -1,0 +1,165 @@
+.error-page {
+  --pink-deep: #d9609f;
+  --pink-soft: #f0a8cf;
+  --pink-pale: #f6d3ea;
+  --lavender: #b3a5ee;
+  --text-light: #fdf0f8;
+
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: "Segoe UI", "Trebuchet MS", system-ui, sans-serif;
+  color: var(--text-light);
+  /* Same dreamy wash as the login page, over the blossom photo */
+  background:
+    linear-gradient(
+      160deg,
+      rgba(150, 140, 235, 0.55) 0%,
+      rgba(200, 120, 200, 0.45) 60%,
+      rgba(225, 100, 170, 0.55) 100%
+    ),
+    var(--bg-image) center / cover no-repeat fixed,
+    linear-gradient(160deg, #a99cf0, #e47bb9);
+}
+
+/* ---------- Navbar ---------- */
+.error-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+  padding: 0 24px;
+  background: linear-gradient(90deg, #d9587f 0%, #e060b0 55%, #e98ad0 100%);
+}
+
+.error-logo {
+  position: relative;
+  font-size: 1.7rem;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  color: var(--pink-soft);
+  text-decoration: none;
+  text-shadow: 0 1px 0 rgba(150, 40, 100, 0.35);
+}
+
+.error-logo-flower {
+  position: absolute;
+  top: -12px;
+  right: -34px;
+  font-size: 2.1rem;
+}
+
+.error-nav-link {
+  color: #fff;
+  font-size: 1.15rem;
+  text-decoration: none;
+}
+
+.error-nav-link:hover {
+  text-decoration: underline;
+}
+
+/* ---------- Content ---------- */
+.error-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 56px 20px 40px;
+  text-align: center;
+}
+
+.error-tagline {
+  margin: 0 0 72px;
+  font-size: clamp(1.6rem, 3.4vw, 2.6rem);
+  font-weight: 500;
+  color: rgba(255, 240, 250, 0.82);
+  text-shadow: 0 2px 12px rgba(120, 60, 160, 0.25);
+}
+
+.error-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(480px, 100%);
+}
+
+/* The one memorable element: a big, soft error code */
+.error-code {
+  margin: 0;
+  font-size: clamp(5rem, 14vw, 9rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 4px;
+  color: var(--pink-pale);
+  text-shadow:
+    0 4px 0 rgba(217, 96, 159, 0.55),
+    0 12px 40px rgba(150, 60, 160, 0.45);
+}
+
+.error-title {
+  margin: 12px 0 8px;
+  font-size: 1.9rem;
+  font-weight: 600;
+  color: #ecc9ee;
+}
+
+.error-message {
+  max-width: 420px;
+  margin: 0 0 28px;
+  font-size: 1.05rem;
+  line-height: 1.55;
+  color: rgba(255, 240, 250, 0.9);
+}
+
+/* ---------- Button + link (same as login) ---------- */
+.error-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 204px;
+  height: 56px;
+  font-size: 1.05rem;
+  color: #fff;
+  text-decoration: none;
+  background: linear-gradient(90deg, #cc7fbd 0%, #f0b3d0 100%);
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  border-radius: 28px;
+  box-shadow: 0 4px 14px rgba(150, 60, 140, 0.3);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.error-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(150, 60, 140, 0.4);
+}
+
+.error-link {
+  margin-top: 22px;
+  color: #fff;
+  text-decoration: underline;
+}
+
+.error-button:focus-visible,
+.error-link:focus-visible,
+.error-nav-link:focus-visible,
+.error-logo:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 4px;
+}
+
+@media (max-width: 600px) {
+  .error-nav {
+    padding: 0 16px;
+  }
+
+  .error-tagline {
+    margin-bottom: 48px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .error-button {
+    transition: none;
+  }
+}

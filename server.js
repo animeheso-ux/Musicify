@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url"
 import mysqlroute from "./mysql.js"
 import MusicRoute from "./music.js"
 import PlaylistRoute from "./playlist.js"
-
+import cookieParser from "cookie-parser"
 
 const app = express()
 const server = http.createServer(app)
@@ -31,6 +31,7 @@ const limiter = rateLimit({
 app.use(express.json())
 app.use("/MusicFolder",express.static("MusicFolder"))
 app.use(express.static(path.join(dirname,"myapp/dist")))
+app.use(cookieParser())
 
 app.use(mysqlroute)
 app.use(MusicRoute)

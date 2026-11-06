@@ -1,35 +1,27 @@
 import { useEffect } from "react"
 
-import NavbarProp from "./navbar.jsx"
 import "./Login.css"
+import { useNavigate } from "react-router"
 
 
 import icon from "./assets/Icon.png"
 
-function LoginPage({ToMain,ToSign}) {
+function LoginPage() {
+    const navigate = useNavigate()
 
     async function VerifyToken() {
-        const Token = localStorage.getItem("Token")
 
-        if (!Token) {
-            return
-        }
-
-        const response = await fetch("/GetToken",{
-            headers : {
-                "authorization" : `Bearer ${Token}`,
-                "Content-Type" : "application/json"
-            }
-        })
+        const response = await fetch("/GetToken")
 
         const data = await response.json()
 
             if (data.status == "success") {
-                ToMain()
+                navigate("/Home")
             }
     }
 
-     async function  Login(params) {
+     async function  Login(e) {
+        e.preventDefault()
             const usernameText = document.getElementById("usernameText")?.value
             const PasswordText = document.getElementById("passwordText")?.value
 
@@ -53,8 +45,7 @@ function LoginPage({ToMain,ToSign}) {
             alert(data.message)
     
             if (data.message == "success") {
-                localStorage.setItem("Token",data.Token)
-                ToMain()
+                navigate("/Home")
             }
         }
 
@@ -71,21 +62,21 @@ function LoginPage({ToMain,ToSign}) {
 
     return (
         <div>
-            <NavbarProp></NavbarProp>
 
-
+            <form onSubmit={(e) => {Login(e)}}>
             <div className="LoginContainer">
                             <h1 className="MainHeader">Download music that lifts the soul!</h1>
                 <h2 className="MainHeader">Welcome!</h2>
-                <textarea id="usernameText" placeholder="Username:"></textarea>
-                 <textarea id="passwordText" placeholder="Password:"></textarea>
+                <input id="usernameText" type="text" placeholder="Username:"></input>
+                 <input type="password" id="passwordText" placeholder="Password:"></input>
 
-                 <button className="LoginButton" onClick={Login}>Login</button>
-                 <a href="#" onClick={ToSign}>Sign in</a>
+                 <input type="submit" className="LoginButton"  ></input>
+                 <a href="/Sign" >Sign up!</a>
 
 
                  
             </div>
+            </form>
 
 
 

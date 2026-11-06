@@ -1,11 +1,12 @@
-import NavbarProp from "./navbar.jsx"
+
 import "./Login.css"
 import validator from "validator"
+import { useNavigate } from "react-router"
 
-function SignIn({ToLogin}) {
+function SignIn() {
 
 
-    async function  createaccount(params) {
+    async function createaccount() {
         const emailText = document.getElementById("EmailText")?.value
         const usernameText = document.getElementById("usernameText")?.value
         const PasswordText = document.getElementById("passwordText")?.value
@@ -13,7 +14,7 @@ function SignIn({ToLogin}) {
         const isemail = validator.isEmail(emailText)
 
         if (isemail != true) {
-            alert("Email not valid") 
+            alert("Email not valid")
             return
         }
 
@@ -27,10 +28,10 @@ function SignIn({ToLogin}) {
             return
         }
 
-        const response = await fetch("/CreateAccount",{
-            method : "POST",
-            headers : {"Content-Type" : "application/json"},
-            body : JSON.stringify({email : emailText,username : usernameText,password : PasswordText})
+        const response = await fetch("/CreateAccount", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: emailText, username: usernameText, password: PasswordText })
         })
 
         const data = await response.json()
@@ -38,7 +39,7 @@ function SignIn({ToLogin}) {
         alert(data.message)
 
         if (data.message == "success") {
-            ToLogin()
+            useNavigate("/Login")
         }
     }
 
@@ -46,17 +47,18 @@ function SignIn({ToLogin}) {
     return (
         <div>
 
-            <NavbarProp></NavbarProp>
-            
-            <div className="LoginContainer">
-                <h1>create account!</h1>
-                <textarea id="EmailText" placeholder="Email :"></textarea>
-                <textarea id="usernameText" placeholder="Username:"></textarea>
-                 <textarea id="passwordText" placeholder="Password:"></textarea>
-                <textarea id="confrimText" placeholder="Confrim password:"></textarea>
+            <form onSubmit={(e) => {e.preventDefault(),createaccount}} >
+                <div className="LoginContainer">
+                    <h1>create account!</h1>
+                    <input type="email" id="EmailText" placeholder="Email :" />
+                    <input type="text" id="usernameText" placeholder="Username:" />
+                    <input type="password" id="passwordText" placeholder="Password:" />
+                    <input type="password" id="confrimText" placeholder="Confirm password:" />
 
-                 <button onClick={createaccount}>Create</button>
-            </div>
+                    <input type="submit" placeholder="Create"></input>
+                    <a href="/Login">Back to login</a>
+                </div>
+            </form>
         </div>
     )
 }

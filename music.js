@@ -18,11 +18,8 @@ const dirname = path.dirname(filename)
 const destination = path.join(dirname, "MusicFolder")
 
 
-
 router.post("/DownloadSong", async (req, res) => {
-    const {user_id, playlist_id } = req.body
-
-
+    const { user_id, playlist_id } = req.body
 
     try {
         const { Link } = req.body
@@ -33,62 +30,46 @@ router.post("/DownloadSong", async (req, res) => {
             skipDownload: true
         })
 
-        database.query("SELECT * FROM songs WHERE song_id = ?", [info.id], async (err, results) => {
+        database.query("SELECT * FROM songs WHERE song_id = $1", [info.id], async (err, results) => {
             if (err) {
                 throw err
             }
 
+            if (results.rows.length > 0) {
 
+                const SONG_ID = results.rows[0].id
 
-
-
-            if (results.length > 0) {
-
-                const SONG_ID = results[0].id
-
-                database.query("SELECT * FROM playlist_songs WHERE playlist_id = ? AND song_id = ?", [playlist_id, SONG_ID], (err, results) => {
+                database.query("SELECT * FROM playlist_songs WHERE playlist_id = $1 AND song_id = $2", [playlist_id, SONG_ID], (err, results) => {
                     if (err) {
                         throw err
                     }
 
-                    if (results.length == 0) {
-                        database.query("INSERT INTO playlist_songs (playlist_id,song_id) VALUES(?,?)", [playlist_id, SONG_ID], (err, results) => {
+                    if (results.rows.length == 0) {
+                        database.query("INSERT INTO playlist_songs (playlist_id, song_id) VALUES ($1, $2)", [playlist_id, SONG_ID], (err, results) => {
                             if (err) {
                                 throw err
                             }
-
                         })
                     }
                 })
 
-
-
-                database.query("SELECT * FROM usersongs WHERE user_id = ? AND song_id = ?", [user_id, SONG_ID], (err, results) => {
+                database.query("SELECT * FROM usersongs WHERE user_id = $1 AND song_id = $2", [user_id, SONG_ID], (err, results) => {
                     if (err) {
                         throw err
                     }
 
-
-                    if (results.length == 0) {
-
-                        database.query("INSERT INTO usersongs (user_id,song_id) VALUES(?,?)", [user_id, SONG_ID], (err, results) => {
+                    if (results.rows.length == 0) {
+                        database.query("INSERT INTO usersongs (user_id, song_id) VALUES ($1, $2)", [user_id, SONG_ID], (err, results) => {
                             if (err) {
                                 throw err
                             }
-
                         })
                     }
-
-
                 })
-
-
-
 
                 res.json({ message: "success" })
                 return
             }
-
 
             console.log("cannot find track..downloading...")
             const videofile = `${info.id}.mp3`
@@ -100,69 +81,53 @@ router.post("/DownloadSong", async (req, res) => {
                 output: path.join(destination, "%(id)s.%(ext)s")
             })
 
-            database.query("INSERT INTO songs (user_id,title,filename,song_id) VALUES(?,?,?,?) ", [user_id, info.title, videofile, info.id], (err, results) => {
+            database.query("INSERT INTO songs (user_id, title, filename, song_id) VALUES ($1, $2, $3, $4) RETURNING id", [user_id, info.title, videofile, info.id], (err, results) => {
                 if (err) {
                     throw err
                 }
 
-                const SONG_ID = results.insertId
+                const SONG_ID = results.rows[0].id
 
-
-                database.query("SELECT * FROM playlist_songs WHERE playlist_id = ? AND song_id = ?", [playlist_id, SONG_ID], (err, results) => {
+                database.query("SELECT * FROM playlist_songs WHERE playlist_id = $1 AND song_id = $2", [playlist_id, SONG_ID], (err, results) => {
                     if (err) {
                         throw err
                     }
 
-                    if (results.length == 0) {
-                        database.query("INSERT INTO playlist_songs (playlist_id,song_id) VALUES(?,?)", [playlist_id, SONG_ID], (err, results) => {
+                    if (results.rows.length == 0) {
+                        database.query("INSERT INTO playlist_songs (playlist_id, song_id) VALUES ($1, $2)", [playlist_id, SONG_ID], (err, results) => {
                             if (err) {
                                 throw err
                             }
-
                         })
                     }
                 })
 
-
-                database.query("INSERT INTO usersongs (user_id,song_id) VALUES(?,?)", [user_id, SONG_ID], (err, results) => {
+                database.query("INSERT INTO usersongs (user_id, song_id) VALUES ($1, $2)", [user_id, SONG_ID], (err, results) => {
                     if (err) {
                         throw err
                     }
-
-
                 })
-
-
-
-
             })
-
-
 
             res.json({ message: "success" })
         })
 
     }
-
-
     catch {
         res.json({ message: "Download error, Please try again!" })
     }
-
-
 })
 
 
-router.post("/DeleteSong", async(req, res) => {
-    const { song_id, user_id , playlist_id } = req.body
+router.post("/DeleteSong", async (req, res) => {
+    const { song_id, user_id, playlist_id } = req.body
     const cache = await GetRedisClient()
 
     console.log(song_id)
 
     const session = await cache.get(`user${user_id}`)
 
-
-    database.query("DELETE FROM usersongs WHERE user_id = ? AND song_id = ?", [user_id, song_id], async(err, results) => {
+    database.query("DELETE FROM usersongs WHERE user_id = $1 AND song_id = $2", [user_id, song_id], async (err, results) => {
         if (err) {
             throw err
         }
@@ -171,38 +136,27 @@ router.post("/DeleteSong", async(req, res) => {
             await cache.del(`user${user_id}`)
         }
 
-        database.query("DELETE FROM playlist_songs WHERE playlist_id =? AND song_id = ? ",[playlist_id,song_id],async(err,results)=> {
+        database.query("DELETE FROM playlist_songs WHERE playlist_id = $1 AND song_id = $2", [playlist_id, song_id], async (err, results) => {
             if (err) {
                 throw err
             }
 
-                    res.status(200).json({status : "success"})
+            res.status(200).json({ status: "success" })
         })
-
-
-
     })
-
-
-
-
-
 })
 
 
 router.get("/GetSongs/:id", (req, res) => {
     const id = req.params.id
 
-
-    database.query("SELECT S.user_id, S.filename, S.title,S.id FROM songs S INNER JOIN usersongs US ON S.id = US.song_id WHERE US.user_id = ?", [id], (err, results) => {
+    database.query("SELECT S.user_id, S.filename, S.title, S.id FROM songs S INNER JOIN usersongs US ON S.id = US.song_id WHERE US.user_id = $1", [id], (err, results) => {
         if (err) {
             throw err
         }
 
-        res.json({ result: results })
+        res.json({ result: results.rows })
     })
-
-
 })
 
 

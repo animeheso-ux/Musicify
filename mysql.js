@@ -4,97 +4,88 @@ import bcrypt  from "bcrypt"
 import jsonwebtoken from "jsonwebtoken"
 import "dotenv/config"
 
+import {Pool} from "pg"
+
 const router = express.Router()
 
 
-
-
-export const database = mysql.createConnection({
-host: "localhost",
-user: 'root',
-password: process.env.DB_PASSWORD,
-database: 'music_app'
-
+export const database = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: true, // Configures required SSL/TLS connection
+  },
 })
 
 
-database.connect((err)=> {
-    if (err) {
-        throw err
-    }
+router.post("/CreateAccount", (req, res) => {
+    const { email, username, password } = req.body
 
-
-    console.log("DB CONNECTED!")
-})
-
-router.post("/CreateAccount",(req,res)=> {
-    const {email,username,password} = req.body
-
-    database.query("SELECT * FROM users WHERE username = ? OR email = ? ",[username,email],(err,results)=> {
+    database.query("SELECT * FROM users WHERE username = $1 OR email = $2", [username, email], (err, results) => {
         if (err) {
             throw err
         }
 
-        if (results.length > 0) {
-            res.json({message : "Username or email has been taken!"})
+        if (results.rows.length > 0) {
+            res.json({ message: "Username or email has been taken!" })
             return
         }
 
-        const hashed = bcrypt.hashSync(password,10)
+        const hashed = bcrypt.hashSync(password, 10)
 
-
-        database.query("INSERT INTO users (username,email,password) VALUES(?,?,?)",[username,email,hashed],(err,results)=> {
+        database.query("INSERT INTO users (username, email, password) VALUES ($1, $2, $3)", [username, email, hashed], (err, results) => {
             if (err) {
                 throw err
             }
 
-            res.json({message : "success"})
+            res.json({ message: "success" })
         })
-
     })
 })
 
-router.post("/Login",(req,res)=> {
-    const {username,password} = req.body
+router.post("/Login", (req, res) => {
+    const { username, password } = req.body
 
-
-    database.query("SELECT * FROM users WHERE username = ?",[username],(err,results)=> {
+    database.query("SELECT * FROM users WHERE username = $1", [username], (err, results) => {
         if (err) {
             throw err
         }
 
-        if (results.length == 0) {
-            res.json({message : "account doesn't exist!"})
+        if (results.rows.length == 0) {
+            res.json({ message: "account doesn't exist!" })
             return
         }
 
-        const user = results[0]
-        const IsValid = bcrypt.compareSync(password,user.password)
-
+        const user = results.rows[0]
+        const IsValid = bcrypt.compareSync(password, user.password)
 
         if (IsValid) {
             const payload = {
-                name : username,
-                id : user.id,
-                email : user.email,
+                name: username,
+                id: user.id,
+                email: user.email,
             }
-            
-            const token = jsonwebtoken.sign(payload,process.env.JWT_SECRET || "YOUR_SECRET_KEY",{expiresIn : "1hr"})
 
 
-            res.json({message : "success",Token : token})
-        }else {
-            res.json({message : "incorrect password"})
+
+            const token = jsonwebtoken.sign(payload, process.env.JWT_SECRET || "YOUR_SECRET_KEY", { expiresIn: "1hr" })
+
+
+                        res.cookie("token",token,{
+                            httpOnly : true,
+                            secure : true,
+                            sameSite : "lax",
+                            maxAge : 3600000
+                        })
+
+            res.json({ message: "success", Token: token })
+        } else {
+            res.json({ message: "incorrect password" })
         }
-
     })
-
 })
 
-
 export const VerifyToken = (req,res,next)=> {
-    const header = req.headers["authorization"]
-    const Token = header && header.split(" ")[1]
+    const Token = req.cookies.token
 
     if (!Token) {
         return res.status(401).json({status : "Token not found"})
