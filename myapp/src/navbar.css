@@ -19,8 +19,8 @@ a {
     position: absolute;
     top: -10%;
     background-image: url("./assets/Icon.png");
-    height: 7vh;
-    width: 8.5vw;
+    height: 6.5vh;
+    width: 7.5vw;
 
     background-size: contain;
     background-repeat: no-repeat;

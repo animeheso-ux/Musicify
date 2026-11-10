@@ -12,7 +12,6 @@ const PlaylistRouter = express.Router()
 PlaylistRouter.get("/GetPlaylist/:id", VerifyToken, async (req, res) => {
     const cache = await GetRedisClient()
     const user_id = req.params.id
-    console.log(req.Token.id, user_id)
     if (req.Token.id != user_id) { return res.status(401).json({ status: "unauthorised" }) }
 
     const session = await cache.get(`user${user_id}`)
@@ -59,8 +58,10 @@ PlaylistRouter.post("/CreatePlaylist", async (req, res) => {
 })
 
 
-PlaylistRouter.get("/LoadPlaylist/:id", (req, res) => {
+PlaylistRouter.get("/LoadPlaylist/:id",VerifyToken, (req, res) => {
+    const user_id = req.Token.id
     const playlist_id = req.params.id
+        if (req.Token.id != user_id) { return res.status(401).json({ status: "unauthorised" }) }
     database.query("SELECT S.user_id, S.filename, S.title, S.id FROM songs S INNER JOIN playlist_songs PS ON S.id = PS.song_id WHERE PS.playlist_id = $1", [playlist_id], (err, results) => {
         if (err) {
             return res.status(500).json({ status: "error" })

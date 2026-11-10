@@ -10,9 +10,12 @@ import MusicRoute from "./music.js"
 import PlaylistRoute from "./playlist.js"
 import cookieParser from "cookie-parser"
 
+import cors from "cors"
+import "dotenv/config"
+
 const app = express()
 const server = http.createServer(app)
-const PORT = 3000
+const PORT = process.env.PORT || 3000
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -25,6 +28,37 @@ const limiter = rateLimit({
   standardHeaders: true, // send RateLimit headers
   legacyHeaders: false, // disable X-RateLimit headers
 })
+
+
+const allowedOrigins = [
+    process.env.CLIENT_URL,
+    "http://localhost:3000",
+    "http://localhost:5173"
+].filter(Boolean)
+
+// 1. CORS
+app.use(cors({
+    origin: allowedOrigins,
+    credentials: true
+    
+}));
+
+// 2. CSRF Origin validation
+app.use((req, res, next) => {
+    if (["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
+        const origin = req.get("Origin");
+
+        if (!allowedOrigins.includes(origin)) {
+            return res.status(403).json({
+                message: "Forbidden"
+            });
+        }
+    }
+
+    next();
+});
+
+
 
 
 
@@ -58,6 +92,8 @@ exec("cd myapp && npm run build",(err)=> {
 
 
 
-server.listen(PORT,()=> console.log("started at http://localhost:3000"))
+server.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server listening on port ${PORT}`);
+});
 
 

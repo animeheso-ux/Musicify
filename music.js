@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url"
 import { GetRedisClient } from "./redis.js"
 
 import { database } from "./mysql.js"
+import { VerifyToken } from "./mysql.js"
+
 
 import path from "path"
 
@@ -16,6 +18,8 @@ const dirname = path.dirname(filename)
 
 
 const destination = path.join(dirname, "MusicFolder")
+
+
 
 
 router.post("/DownloadSong", async (req, res) => {
@@ -147,8 +151,10 @@ router.post("/DeleteSong", async (req, res) => {
 })
 
 
-router.get("/GetSongs/:id", (req, res) => {
+router.get("/GetSongs/:id", VerifyToken, (req, res) => {
     const id = req.params.id
+
+    if (req.Token.id !== id) { return res.status(401).json({ status: "unauthorised" }) }
 
     database.query("SELECT S.user_id, S.filename, S.title, S.id FROM songs S INNER JOIN usersongs US ON S.id = US.song_id WHERE US.user_id = $1", [id], (err, results) => {
         if (err) {

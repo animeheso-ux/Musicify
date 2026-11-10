@@ -1,11 +1,13 @@
 import { createClient } from "redis";
-
+import "dotenv/config"
 let Redis
 
 
 export async function GetRedisClient() {
     if (!Redis) {
-    Redis = createClient()
+    Redis = createClient({
+        url : process.env.REDIS_URL
+    })
 
 
     Redis.on("error",err => console.log(err))
