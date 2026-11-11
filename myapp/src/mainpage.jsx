@@ -2,6 +2,8 @@ import { useEffect, useState, useRef } from "react"
 import { useNavigate } from "react-router"
 import "./mainpage.css"
 
+import supabase from "./supabase.js"
+
 function MainPage() {
     const navigate = useNavigate()
     const [MusicList, SetList] = useState([])
@@ -13,6 +15,7 @@ function MainPage() {
     const [MaxDuration, setmax] = useState("0:00")
     const [VisualArray, SetVisualArray] = useState(Array(64).fill(0))
     const [CurrentSongName, SetSongName] = useState("")
+
 
 
     const [playlists, setplaylist] = useState([])
@@ -29,9 +32,9 @@ function MainPage() {
     let songPosition = 0;
 
 
-    const renderplaylist = playlists.map((playlist) => {
+    const renderplaylist = playlists.map((playlist,index) => {
         return (
-            <div className="playlist-container-mini">
+            <div className="playlist-container-mini" key={index}>
                 <button className="playlist-container-mini" onClick={() => { setSelected(playlist.name), setCurrentPlayListID(playlist.id), LoadPlaylist(playlist.id) }}>
                     <h4>{playlist.name}</h4>
                     <button onClick={() => { editChangesContainer ? (setEditContainer(false)) : (setEditContainer(true)), setEdited(playlist.name) }}>Edit</button>
@@ -52,9 +55,9 @@ function MainPage() {
 
 
 
-    const LoadMusicList = MusicList.map((song) => {
+    const LoadMusicList = MusicList.map((song,index) => {
         return (
-            <div id={song.title} className={CurrentSongName === song.title ? "active" : "Song"} key={song.id}  >
+            <div id={song.title}  className={CurrentSongName === song.title ? "active" : "Song"} key={song.id}  >
                 <p style={{ position: "absolute" }}  >{song.title}</p>
 
                 <div className="OptionsDiv">
@@ -70,26 +73,28 @@ function MainPage() {
         )
     })
 
-
-
     async function VerifyToken() {
+    const response = await fetch("/api/GetToken");
 
-        const response = await fetch("/GetToken")
-
-        const data = await response.json()
-
-        if (data.status != "success") {
-            navigate("/")
-        }
-
-
-        return data.Token
+    if (!response.ok) {
+        navigate("/");
+        return null;
     }
+
+    const data = await response.json();
+
+    if (data.status !== "success") {
+        navigate("/");
+        return null;
+    }
+
+    return data.Token;
+}
 
     async function GetPlaylist() {
         const Token = await VerifyToken()
 
-        const response = await fetch(`/GetPlayList/${Token["id"]}`)
+        const response = await fetch(`/api/GetPlayList/${Token["id"]}`)
 
         const data = await response.json()
 
@@ -99,7 +104,7 @@ function MainPage() {
     async function CreatePlaylist() {
         const Token = await VerifyToken()
 
-        const response = await fetch(`/CreatePlaylist`, {
+        const response = await fetch(`/api/CreatePlaylist`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -115,7 +120,7 @@ function MainPage() {
     }
 
     async function LoadPlaylist(id) {
-        const response = await fetch(`/LoadPlaylist/${id}`)
+        const response = await fetch(`/api/LoadPlaylist/${id}`)
 
         const data = await response.json()
 
@@ -126,7 +131,7 @@ function MainPage() {
     async function editPlaylist() {
         const Token = await VerifyToken()
         setEditContainer(0)
-        const response = await fetch("/editPlaylist", {
+        const response = await fetch("/api/editPlaylist", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -148,7 +153,14 @@ function MainPage() {
 
     function LoadSong(song) {
 
-        const audio = new Audio(`/MusicFolder/${song.filename}`)
+        const {data} = supabase.storage.from("Music").getPublicUrl(song.filename)
+
+        const audio = new Audio(data.publicUrl)
+
+        audio.crossOrigin = "anonymous";
+
+
+        console.log(data.publicUrl)
 
         currentaudio.current = audio
 
@@ -220,7 +232,6 @@ function MainPage() {
 
 
     function PlaySong(song) {
-        let musiclist = []
         if (Playing) {
             ChangePlaying(false)
             currentaudio.current?.pause()
@@ -287,7 +298,7 @@ function MainPage() {
         ChangeDownloadState("Downloading....")
 
 
-        const response = await fetch("/DownloadSong", {
+        const response = await fetch("/api/DownloadSong", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ Link: InputText, user_id: Token["id"], playlist_id: currentPlaylistID })
@@ -295,8 +306,9 @@ function MainPage() {
 
         const data = await response.json()
 
-
-
+        if (!response.ok) {
+            ChangeDownloadState(data.message)
+        }
 
 
         if (data.message == "success") {
@@ -314,7 +326,7 @@ function MainPage() {
         const Token = await VerifyToken()
 
 
-        const response = await fetch("/DeleteSong", {
+        const response = await fetch("/api/DeleteSong", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ song_id: song.id, user_id: Token["id"], playlist_id: currentPlaylistID })
@@ -323,7 +335,7 @@ function MainPage() {
         const data = await response.json()
 
         if (data.status == "success") {
-            LoadPlaylist()
+            LoadPlaylist(Token["id"])
         }
     }
 
@@ -331,7 +343,7 @@ function MainPage() {
         const Token = await VerifyToken()
 
 
-        const response = await fetch(`/GetSongs/${Token["id"]}`)
+        const response = await fetch(`/api/GetSongs/${Token["id"]}`)
 
         const data = await response.json()
 
@@ -352,7 +364,7 @@ function MainPage() {
 
 
     async function shuffle() {
-        const response = await fetch("/Shuffle", {
+        const response = await fetch("/api/Shuffle", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ musiclist: MusicList })
@@ -375,7 +387,7 @@ function MainPage() {
     })
 
     useEffect(() => {
-        if (MusicList.length == 0 && window.location.port == 3000) {
+        if (MusicList.length == 0) {
             GetPlaylist()
         }
     }, [])
@@ -419,7 +431,6 @@ function MainPage() {
                 <h1 className="PlaylistHeader">Playlist</h1>
 
                 <div className="MusicContainer">
-                    {LoadMusic}
 
                     <div className="Song">
                         <p>SongName</p>

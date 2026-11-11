@@ -11,7 +11,7 @@ function LoginPage() {
 
     async function VerifyToken() {
 
-        const response = await fetch("/GetToken")
+        const response = await fetch("/api/GetToken")
 
         const data = await response.json()
 
@@ -34,7 +34,7 @@ function LoginPage() {
     
 
     
-            const response = await fetch("Login",{
+            const response = await fetch("/api/Login",{
                 method : "POST",
                 headers : {"Content-Type" : "application/json"},
                 body : JSON.stringify({username : usernameText,password : PasswordText})

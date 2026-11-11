@@ -21,6 +21,12 @@ const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 
+app.use(express.json())
+//app.use("/MusicFolder",express.static("MusicFolder"))
+//app.use(express.static(path.join(dirname,"myapp/dist")))
+app.use(cookieParser())
+
+
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per window
@@ -62,10 +68,7 @@ app.use((req, res, next) => {
 
 
 
-app.use(express.json())
-app.use("/MusicFolder",express.static("MusicFolder"))
-app.use(express.static(path.join(dirname,"myapp/dist")))
-app.use(cookieParser())
+
 
 app.use(mysqlroute)
 app.use(MusicRoute)
@@ -75,19 +78,19 @@ app.use(limiter)
 
 
 
-app.get("/{*path}",(req,res)=> {
-    res.sendFile(path.join(dirname,"myapp/dist","index.html"))
-})
+// app.get("/{*path}",(req,res)=> {
+//     res.sendFile(path.join(dirname,"myapp/dist","index.html"))
+// })
 
 
 
-exec("cd myapp && npm run build",(err)=> {
-    if (err) {
-        throw err
-    }
+// exec("cd myapp && npm run build",(err)=> {
+//     if (err) {
+//         throw err
+//     }
 
-    console.log("REACT LOADED")
-})
+//     console.log("REACT LOADED")
+// })
 
 
 

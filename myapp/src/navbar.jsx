@@ -8,16 +8,24 @@ function NavbarProp() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  function Logout() {
+  async function Logout() {
     const proceed = confirm("Log out of your account?")
 
     if (!proceed) {return}
 
-          
-    if (  localStorage.getItem("Token")) {
-      localStorage.removeItem("Token")
+    const response = await fetch("/api/Logout")
+
+    const data = await response.json()
+
+    if (data.status == "success") {
       navigate("/")
     }
+
+          
+    // if (  localStorage.getItem("Token")) {
+    //   localStorage.removeItem("Token")
+    //   navigate("/")
+    // }
 
   }
 

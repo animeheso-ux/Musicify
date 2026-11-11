@@ -16,6 +16,7 @@
   "type": "module",
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0",
+    "@supabase/supabase-js": "^2.119.0",
     "bcrypt": "^6.0.0",
     "concurrently": "^10.0.6",
     "cookie-parser": "^1.4.7",

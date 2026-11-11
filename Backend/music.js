@@ -10,6 +10,13 @@ import { VerifyToken } from "./mysql.js"
 
 import path from "path"
 
+import supabase from "./superbase.js"
+import fs from "fs/promises";
+import os from "os";
+import crypto from "crypto";
+
+
+
 const router = express.Router()
 
 
@@ -17,110 +24,205 @@ const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 
-const destination = path.join(dirname, "MusicFolder")
+//const destination = path.join(dirname, "MusicFolder")
+
+
+
+router.get("/test-upload", async (req, res) => {
+    try {
+        const file = await fs.readFile("./test.mp3");
+
+        const { data, error } = await supabase
+            .storage
+            .from("Music")
+            .upload("test.mp3", file, {
+                contentType: "audio/mpeg"
+            });
+
+        if (error) throw error;
+
+        res.json({
+            message: "Upload successful!",
+            data
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
 
 
 
 
 router.post("/DownloadSong", async (req, res) => {
-    const { user_id, playlist_id } = req.body
+    const { user_id, playlist_id, Link } = req.body;
+
+    let tempDir;
+    let uploadedPath;
 
     try {
-        const { Link } = req.body
-        console.log(Link)
+        if (!user_id || !playlist_id || !Link) {
+            return res.status(400).json({
+                message: "Missing required information"
+            });
+        }
 
+        // 1. Validate YouTube URL
+        let parsedUrl;
+
+        try {
+            parsedUrl = new URL(Link);
+        } catch {
+            return res.status(400).json({
+                message: "Invalid YouTube URL"
+            });
+        }
+
+        const allowedHosts = [
+            "youtube.com",
+            "www.youtube.com",
+            "m.youtube.com",
+            "youtu.be"
+        ];
+
+        if (
+            !["https:", "http:"].includes(parsedUrl.protocol) ||
+            !allowedHosts.includes(parsedUrl.hostname)
+        ) {
+            return res.status(400).json({
+                message: "Only YouTube URLs are allowed"
+            });
+        }
+
+        // 2. Get YouTube information
         const info = await ytDlpExec(Link, {
             dumpSingleJson: true,
             skipDownload: true
-        })
+        });
 
-        database.query("SELECT * FROM songs WHERE song_id = $1", [info.id], async (err, results) => {
-            if (err) {
-                throw err
-            }
 
-            if (results.rows.length > 0) {
+        if (info.duration > 600) {
+            return res.status(400).json({
+                message: "Youtube video is too long!"
+            });
+        }
 
-                const SONG_ID = results.rows[0].id
+        // 3. Check if song already exists
+        const existingSong = await database.query(
+            "SELECT * FROM songs WHERE song_id = $1",
+            [info.id]
+        );
 
-                database.query("SELECT * FROM playlist_songs WHERE playlist_id = $1 AND song_id = $2", [playlist_id, SONG_ID], (err, results) => {
-                    if (err) {
-                        throw err
-                    }
+        let songId;
 
-                    if (results.rows.length == 0) {
-                        database.query("INSERT INTO playlist_songs (playlist_id, song_id) VALUES ($1, $2)", [playlist_id, SONG_ID], (err, results) => {
-                            if (err) {
-                                throw err
-                            }
-                        })
-                    }
-                })
+        if (existingSong.rows.length > 0) {
+            songId = existingSong.rows[0].id;
 
-                database.query("SELECT * FROM usersongs WHERE user_id = $1 AND song_id = $2", [user_id, SONG_ID], (err, results) => {
-                    if (err) {
-                        throw err
-                    }
+        } else {
+            console.log("Song not found. Downloading...");
 
-                    if (results.rows.length == 0) {
-                        database.query("INSERT INTO usersongs (user_id, song_id) VALUES ($1, $2)", [user_id, SONG_ID], (err, results) => {
-                            if (err) {
-                                throw err
-                            }
-                        })
-                    }
-                })
+            // 4. Create temporary directory
+            tempDir = await fs.mkdtemp(
+                path.join(os.tmpdir(), "musicify-")
+            );
 
-                res.json({ message: "success" })
-                return
-            }
-
-            console.log("cannot find track..downloading...")
-            const videofile = `${info.id}.mp3`
-
+            // 5. Download MP3 temporarily
             await ytDlpExec(Link, {
                 extractAudio: true,
-                audioFormat: 'mp3',
+                audioFormat: "mp3",
                 ffmpegLocation: ffmpegPath,
-                output: path.join(destination, "%(id)s.%(ext)s")
-            })
+                output: path.join(tempDir, "%(id)s.%(ext)s")
+            });
 
-            database.query("INSERT INTO songs (user_id, title, filename, song_id) VALUES ($1, $2, $3, $4) RETURNING id", [user_id, info.title, videofile, info.id], (err, results) => {
-                if (err) {
-                    throw err
-                }
+            // 6. Read downloaded MP3
+            const filePath = path.join(tempDir, `${info.id}.mp3`);
+            const fileBuffer = await fs.readFile(filePath);
 
-                const SONG_ID = results.rows[0].id
+            // 7. Upload to Supabase Music bucket
+            const storagePath = `${info.id}.mp3`;
 
-                database.query("SELECT * FROM playlist_songs WHERE playlist_id = $1 AND song_id = $2", [playlist_id, SONG_ID], (err, results) => {
-                    if (err) {
-                        throw err
-                    }
+            const { data, error } = await supabase
+                .storage
+                .from("Music")
+                .upload(storagePath, fileBuffer, {
+                    contentType: "audio/mpeg",
+                    upsert: false
+                });
 
-                    if (results.rows.length == 0) {
-                        database.query("INSERT INTO playlist_songs (playlist_id, song_id) VALUES ($1, $2)", [playlist_id, SONG_ID], (err, results) => {
-                            if (err) {
-                                throw err
-                            }
-                        })
-                    }
-                })
+            if (error) throw error;
 
-                database.query("INSERT INTO usersongs (user_id, song_id) VALUES ($1, $2)", [user_id, SONG_ID], (err, results) => {
-                    if (err) {
-                        throw err
-                    }
-                })
-            })
+            uploadedPath = data.path;
 
-            res.json({ message: "success" })
-        })
+            // 8. Save song metadata
+            const insertedSong = await database.query(
+                `INSERT INTO songs
+                (user_id, title, filename, song_id)
+                VALUES ($1, $2, $3, $4)
+                RETURNING id`,
+                [user_id, info.title, data.path, info.id]
+            );
 
+            songId = insertedSong.rows[0].id;
+        }
+
+        // 9. Add song to playlist if not already there
+        await database.query(
+            `INSERT INTO playlist_songs (playlist_id, song_id)
+             SELECT $1, $2
+             WHERE NOT EXISTS (
+                 SELECT 1 FROM playlist_songs
+                 WHERE playlist_id = $1 AND song_id = $2
+             )`,
+            [playlist_id, songId]
+        );
+
+        // 10. Add song to user library if not already there
+        await database.query(
+            `INSERT INTO usersongs (user_id, song_id)
+             SELECT $1, $2
+             WHERE NOT EXISTS (
+                 SELECT 1 FROM usersongs
+                 WHERE user_id = $1 AND song_id = $2
+             )`,
+            [user_id, songId]
+        );
+
+        res.json({
+            message: "success",
+            song_id: songId
+        });
+
+    } catch (error) {
+        console.error("DownloadSong error:", error);
+
+        if (uploadedPath) {
+            const { error: removeError } = await supabase
+                .storage
+                .from("Music")
+                .remove([uploadedPath]);
+
+            if (removeError) {
+                console.error("Supabase cleanup failed:", removeError);
+            }
+        }
+
+        res.status(500).json({
+            message: "Download error, please try again!"
+        });
+
+    } finally {
+        if (tempDir) {
+            await fs.rm(tempDir, {
+                recursive: true,
+                force: true
+            }).catch(console.error);
+        }
     }
-    catch {
-        res.json({ message: "Download error, Please try again!" })
-    }
-})
+});
+
+
 
 
 router.post("/DeleteSong", async (req, res) => {
@@ -154,7 +256,7 @@ router.post("/DeleteSong", async (req, res) => {
 router.get("/GetSongs/:id", VerifyToken, (req, res) => {
     const id = req.params.id
 
-    if (req.Token.id !== id) { return res.status(401).json({ status: "unauthorised" }) }
+    if (req.Token.id !== parseInt(id)) { return res.status(401).json({ status: "unauthorised" }) }
 
     database.query("SELECT S.user_id, S.filename, S.title, S.id FROM songs S INNER JOIN usersongs US ON S.id = US.song_id WHERE US.user_id = $1", [id], (err, results) => {
         if (err) {

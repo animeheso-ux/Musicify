@@ -28,7 +28,7 @@ function SignIn() {
             return
         }
 
-        const response = await fetch("/CreateAccount", {
+        const response = await fetch("/api/CreateAccount", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email: emailText, username: usernameText, password: PasswordText })

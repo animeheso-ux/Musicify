@@ -6,6 +6,8 @@ import "dotenv/config"
 
 import {Pool} from "pg"
 
+
+
 const router = express.Router()
 
 
@@ -15,6 +17,20 @@ export const database = new Pool({
     rejectUnauthorized: true, // Configures required SSL/TLS connection
   },
 })
+
+
+router.get("/Logout", (req, res) => {
+
+    res.clearCookie("token", {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+        maxAge: 3600000
+    })
+
+    return res.status(200).json({status : "success"})
+})
+
 
 
 router.post("/CreateAccount", (req, res) => {
@@ -67,7 +83,7 @@ router.post("/Login", (req, res) => {
 
 
 
-            const token = jsonwebtoken.sign(payload, process.env.JWT_SECRET || "YOUR_SECRET_KEY", { expiresIn: "1hr" })
+            const token = jsonwebtoken.sign(payload, process.env.JWT_SECRET , { expiresIn: "1hr" })
 
 
                         res.cookie("token",token,{
