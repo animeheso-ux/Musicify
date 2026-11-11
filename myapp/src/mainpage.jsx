@@ -160,8 +160,6 @@ function MainPage() {
         audio.crossOrigin = "anonymous";
 
 
-        console.log(data.publicUrl)
-
         currentaudio.current = audio
 
         if (!AudioContextWF.current) {
