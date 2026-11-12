@@ -103,6 +103,10 @@ router.post("/DownloadSong", async (req, res) => {
             remoteComponents: "ejs:github"
         });
 
+        const version = await ytDlpExec.exec("--version");
+
+console.log("Render yt-dlp version:", version.stdout);
+
 
         if (info.duration > 600) {
             return res.status(400).json({
