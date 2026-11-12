@@ -4,7 +4,7 @@ import validator from "validator"
 import { useNavigate } from "react-router"
 
 function SignIn() {
-
+    const navigate = useNavigate()
 
     async function createaccount() {
         const emailText = document.getElementById("EmailText")?.value
@@ -39,7 +39,7 @@ function SignIn() {
         alert(data.message)
 
         if (data.message == "success") {
-            useNavigate("/Login")
+            navigate("/Login")
         }
     }
 
@@ -47,7 +47,7 @@ function SignIn() {
     return (
         <div>
 
-            <form onSubmit={(e) => {e.preventDefault(),createaccount}} >
+            <form onSubmit={(e) => {e.preventDefault(),createaccount()}} >
                 <div className="LoginContainer">
                     <h1>create account!</h1>
                     <input type="email" id="EmailText" placeholder="Email :" />
