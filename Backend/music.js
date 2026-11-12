@@ -99,7 +99,8 @@ router.post("/DownloadSong", async (req, res) => {
         // 2. Get YouTube information
         const info = await ytDlpExec(Link, {
             dumpSingleJson: true,
-            skipDownload: true
+            jsRuntimes: "node",
+            remoteComponents: "ejs:github"
         });
 
 

@@ -6,7 +6,7 @@ export default defineConfig({
     server: {
         proxy: {
             '/api': {
-                target: "https://musicify-1-b1nm.onrender.com",//'http://127.0.0.1:3000',
+                 target: "https://musicify-1-b1nm.onrender.com",
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/api/, ''),
             }
