@@ -467,7 +467,7 @@ function MainPage() {
 
             )}
 
-            {currentPlaylistSelected && (
+            {currentPlaylistSelected ? (
             <div className="AddSong">
                 <input id="Input" type="text" placeholder="Paste youtube link to put in playlist:"></input>
                 <button onClick={DownloadSongs}>submit</button>
@@ -479,7 +479,9 @@ function MainPage() {
 
                                 <p>{DownloadState || "Status:"}</p>
             </div>
-            ) }
+            )  : (
+                <h1 style={{position : "absolute" , left : "45%" , transform : "translate(-50%,-50%)" , bottom : "50%"}}>Select or create your playlist!</h1>
+            )}
 
 
             <div className="MusicDiv">
