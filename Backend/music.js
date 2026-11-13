@@ -13,7 +13,7 @@ import path from "path"
 import supabase from "./superbase.js"
 import fs from "fs/promises";
 import os from "os";
-import crypto from "crypto";
+import multer from "multer"
 
 
 
@@ -22,38 +22,171 @@ const router = express.Router()
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
-
-
 //const destination = path.join(dirname, "MusicFolder")
 
+//multer diskstorage is for my own local file system
+//multer memorystorage is for online as I can get the buff of the folder and send it into supabase
+
+const filefilter = (req, file, cb) => {
+
+    const ismp3 = path.extname(file.originalname).toLowerCase() == ".mp3"
 
 
-router.get("/test-upload", async (req, res) => {
+    const validmime = file.mimetype == 'audio/mpeg' || file.mimetype === 'audio/mp3';
+
+
+    if (ismp3 && validmime) {
+        cb(null, true)
+    } else {
+        cb(new Error("only .mp3 files are allowed!"), false)
+    }
+}
+
+const upload = multer({ storage: multer.memoryStorage(), limits: 50 * 1024 * 1024, fileFilter: filefilter })
+
+
+
+
+
+// router.get("/test-upload", async (req, res) => {
+//     try {
+//         const file = await fs.readFile("./test.mp3");
+
+//         const { data, error } = await supabase
+//             .storage
+//             .from("Music")
+//             .upload("test.mp3", file, {
+//                 contentType: "audio/mpeg"
+//             });
+
+//         if (error) throw error;
+
+//         res.json({
+//             message: "Upload successful!",
+//             data
+//         });
+
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ message: error.message });
+//     }
+// });
+
+
+router.post("/uploadSongs", VerifyToken, upload.single("file"), async (req, res) => {
+
+    let uploadedPath;
+
     try {
-        const file = await fs.readFile("./test.mp3");
+        // 1. Validate user
+        if (!req.Token?.id) {
+            return res.status(403).json({
+                status: "unauthorised"
+            });
+        }
 
+        const { playlist_id } = req.body;
+        const file = req.file;
+        const user_id = req.Token.id;
+
+        // 2. Check required information
+        if (!playlist_id || !file) {
+            return res.status(400).json({
+                message: "Missing required information"
+            });
+        }
+
+        // 3. Validate MP3
+        if (
+            file.mimetype !== "audio/mpeg" ||
+            path.extname(file.originalname).toLowerCase() !== ".mp3"
+        ) {
+            return res.status(400).json({
+                message: "Only MP3 files are allowed"
+            });
+        }
+
+        // 4. Generate filename
+        const title = path.parse(file.originalname).name;
+        const filename = `${user_id}/${Date.now()}.mp3`;
+
+
+
+
+
+        // 5. Upload to Supabase
         const { data, error } = await supabase
             .storage
             .from("Music")
-            .upload("test.mp3", file, {
-                contentType: "audio/mpeg"
+            .upload(filename, file.buffer, {
+                contentType: "audio/mpeg",
+                upsert: false
             });
 
         if (error) throw error;
 
-        res.json({
-            message: "Upload successful!",
-            data
+        uploadedPath = data.path;
+
+        // 6. Save song metadata
+        const insertedSong = await database.query(
+            `INSERT INTO songs
+            (user_id, title, filename,song_id)
+            VALUES ($1, $2, $3,$4)
+            RETURNING id`,
+            [user_id, title, data.path, path.parse(data.path).name]
+        );
+
+        const songId = insertedSong.rows[0].id;
+
+        // 7. Add song to playlist if not already there
+        await database.query(
+            `INSERT INTO playlist_songs (playlist_id, song_id)
+             SELECT $1, $2
+             WHERE NOT EXISTS (
+                 SELECT 1 FROM playlist_songs
+                 WHERE playlist_id = $1 AND song_id = $2
+             )`,
+            [playlist_id, songId]
+        );
+
+        // 8. Add song to user library if not already there
+        await database.query(
+            `INSERT INTO usersongs (user_id, song_id)
+             SELECT $1, $2
+             WHERE NOT EXISTS (
+                 SELECT 1 FROM usersongs
+                 WHERE user_id = $1 AND song_id = $2
+             )`,
+            [user_id, songId]
+        );
+
+        res.status(200).json({
+            message: "Upload successful",
+            song_id: songId
         });
 
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: error.message });
+    } catch (err) {
+        console.error("UploadSongs error:", err);
+
+        // 9. Remove uploaded file if something went wrong
+        if (uploadedPath) {
+            const { error: removeError } = await supabase
+                .storage
+                .from("Music")
+                .remove([uploadedPath]);
+
+            if (removeError) {
+                console.error("Supabase cleanup failed:", removeError);
+            }
+        }
+
+        res.status(500).json({
+            message: "Upload error, please try again!"
+        });
     }
 });
 
-
-
+////////////////
 
 
 router.post("/DownloadSong", async (req, res) => {
@@ -103,9 +236,7 @@ router.post("/DownloadSong", async (req, res) => {
             remoteComponents: "ejs:github"
         });
 
-        const version = await ytDlpExec.exec("--version");
 
-console.log("Render yt-dlp version:", version.stdout);
 
 
         if (info.duration > 600) {

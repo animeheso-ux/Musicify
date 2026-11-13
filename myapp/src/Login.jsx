@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect , useState } from "react"
 
 import "./Login.css"
 import { useNavigate } from "react-router"
@@ -7,6 +7,8 @@ import { useNavigate } from "react-router"
 import icon from "./assets/Icon.png"
 
 function LoginPage() {
+    const [username,setUser] = useState("")
+    const [password,setPass] = useState("")
     const navigate = useNavigate()
 
     async function VerifyToken() {
@@ -22,12 +24,12 @@ function LoginPage() {
 
      async function  Login(e) {
         e.preventDefault()
-            const usernameText = document.getElementById("usernameText")?.value
-            const PasswordText = document.getElementById("passwordText")?.value
+            // const usernameText = document.getElementById("usernameText")?.value
+            // const PasswordText = document.getElementById("passwordText")?.value
 
           
     
-            if (usernameText.length == 0 || PasswordText.length == 0) {
+            if (username.length == 0 || password.length == 0) {
                 alert("user or password cannot be empty")
                 return
             }
@@ -37,7 +39,7 @@ function LoginPage() {
             const response = await fetch("/api/Login",{
                 method : "POST",
                 headers : {"Content-Type" : "application/json"},
-                body : JSON.stringify({username : usernameText,password : PasswordText})
+                body : JSON.stringify({username : username,password : password})
             })
     
             const data = await response.json()
@@ -67,8 +69,8 @@ function LoginPage() {
             <div className="LoginContainer">
                             <h1 className="MainHeader">Download music that lifts the soul!</h1>
                 <h2 className="MainHeader">Welcome!</h2>
-                <input id="usernameText" type="text" placeholder="Username:"></input>
-                 <input type="password" id="passwordText" placeholder="Password:"></input>
+                <input id="usernameText" type="text" placeholder="Username:" onChange={(e) => {setUser(e.target.value)}} ></input>
+                 <input type="password" id="passwordText" placeholder="Password:" onChange={(e) => {setPass(e.target.value)}}></input>
 
                  <input type="submit" className="LoginButton"  ></input>
                  <a href="/Sign" >Sign up!</a>

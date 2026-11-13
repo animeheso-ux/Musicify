@@ -67,6 +67,25 @@ app.use((req, res, next) => {
 
 
 
+app.use((err, req, res, next) => {
+    if (err instanceof multer.MulterError) {
+        return res.status(400).json({
+            message: err.message
+        });
+    }
+
+    if (err.message === "Only MP3 files are allowed!") {
+        return res.status(400).json({
+            message: err.message
+        });
+    }
+
+    return res.status(500).json({
+        message: "Something went wrong"
+    });
+});
+
+
 
 
 app.use(limiter)

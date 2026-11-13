@@ -92,6 +92,30 @@ PlaylistRouter.post("/editPlaylist", async (req, res) => {
 })
 
 
+PlaylistRouter.delete("/deletePlaylist/:playlist_id",VerifyToken,async(req,res)=> {
+    const Token = req.Token
+    const playlist_id = req.params.playlist_id
+    const cache = await GetRedisClient()
+
+    
+
+    database.query("DELETE FROM playlist WHERE id =$1 AND user_id=$2  ",[playlist_id,Token.id],async(err,results)=> {
+        if (err) {
+            return res.status(500).json({ status: "error" })
+        }
+
+        
+        const session = await cache.get(`user${Token.id}`)
+
+        if (session) {
+            cache.del(`user${Token.id}`)
+        }
+ 
+        return res.status(200).json({status : "success"})
+
+    })
+})
+
 
 
 

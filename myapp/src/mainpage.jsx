@@ -4,6 +4,7 @@ import "./mainpage.css"
 
 import supabase from "./supabase.js"
 
+
 function MainPage() {
     const navigate = useNavigate()
     const [MusicList, SetList] = useState([])
@@ -24,6 +25,7 @@ function MainPage() {
     const [newPlaylistName, setNewPlaylistName] = useState("")
     const [editChangesContainer, setEditContainer] = useState(false)
     const [edited, setEdited] = useState("")
+    const [selectedFile,setSelectedFile] = useState(null)
 
     const currentaudio = useRef(null)
     const AudioContextWF = useRef(null)
@@ -38,7 +40,7 @@ function MainPage() {
                 <button className="playlist-container-mini" onClick={() => { setSelected(playlist.name), setCurrentPlayListID(playlist.id), LoadPlaylist(playlist.id) }}>
                     <h4>{playlist.name}</h4>
                     <button onClick={() => { editChangesContainer ? (setEditContainer(false)) : (setEditContainer(true)), setEdited(playlist.name) }}>Edit</button>
-                    <button>Delete</button>
+                    <button onClick={() => {deletePlaylist(playlist.id,playlist.name)}}>Delete</button>
                 </button>
             </div>
         )
@@ -314,7 +316,7 @@ function MainPage() {
         }
 
 
-        LoadMusic()
+        LoadPlaylist(currentPlaylistID)
 
 
     }
@@ -336,6 +338,8 @@ function MainPage() {
             LoadPlaylist(Token["id"])
         }
     }
+
+
 
     async function LoadMusic() {
         const Token = await VerifyToken()
@@ -372,6 +376,56 @@ function MainPage() {
 
         SetList(data.result)
     }
+
+    async function uploadSongs() {
+
+        if (selectedFile == null) {
+            return alert("Empty folder!")
+        }
+
+        const formdata = new FormData()
+        formdata.append("file",selectedFile)
+        formdata.append("playlist_id",currentPlaylistID)
+
+        const response = await fetch("/api/uploadSongs",{
+            method : "POST",
+           body : formdata
+        })
+
+        const data = await response.json()
+
+                ChangeDownloadState("Downloading....")
+
+
+                if (data.message == "Upload successful") {
+                    ChangeDownloadState(data.message)
+                    LoadPlaylist(currentPlaylistID)
+                }
+
+
+
+    }
+
+    async function deletePlaylist(id,name) {
+        const confrim = confirm(`Delete playlist ${name} ?`)
+
+
+        if (confrim === false) {return}
+
+        const response = await fetch(`/api/deletePlaylist/${id}`,{
+            method : "DELETE"
+        })
+
+        const data = await response.json()
+
+
+        if (data.status == "success") {
+            GetPlaylist()
+        }
+    }
+
+
+
 
 
     document.addEventListener("contextmenu", (e) => {
@@ -413,20 +467,25 @@ function MainPage() {
 
             )}
 
-
-
+            {currentPlaylistSelected && (
             <div className="AddSong">
                 <input id="Input" type="text" placeholder="Paste youtube link to put in playlist:"></input>
                 <button onClick={DownloadSongs}>submit</button>
-                <p>{DownloadState || "Status:"}</p>
-            </div>
 
+
+                <p>if it doesn't work, upload your mp3 files here.</p>
+                <input type="file" onChange={(e) => {setSelectedFile(e.target.files[0])}} accept=".mp3"  ></input>
+                <button onClick={uploadSongs}>Upload song</button>
+
+                                <p>{DownloadState || "Status:"}</p>
+            </div>
+            ) }
 
 
             <div className="MusicDiv">
 
 
-                <h1 className="PlaylistHeader">Playlist</h1>
+                <h1 className="PlaylistHeader">{currentPlaylistSelected || "Playlist"}</h1>
 
                 <div className="MusicContainer">
 
