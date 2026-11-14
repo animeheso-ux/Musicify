@@ -76,6 +76,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: 50 * 1024 * 102
 router.post("/uploadSongs", VerifyToken, upload.single("file"), async (req, res) => {
 
     let uploadedPath;
+    let songId;
 
     try {
         // 1. Validate user
@@ -127,8 +128,18 @@ router.post("/uploadSongs", VerifyToken, upload.single("file"), async (req, res)
 
         uploadedPath = data.path;
 
-        // 6. Save song metadata
-        const insertedSong = await database.query(
+        const existingSong = await database.query(
+            "SELECT * FROM songs WHERE title = $1",
+            [title]
+        );
+
+
+
+        if (existingSong.rows.length > 0 ) {
+                    songId = existingSong.rows[0].id;
+                    
+        }else {
+                    const insertedSong = await database.query(
             `INSERT INTO songs
             (user_id, title, filename,song_id)
             VALUES ($1, $2, $3,$4)
@@ -136,7 +147,11 @@ router.post("/uploadSongs", VerifyToken, upload.single("file"), async (req, res)
             [user_id, title, data.path, path.parse(data.path).name]
         );
 
-        const songId = insertedSong.rows[0].id;
+         songId = insertedSong.rows[0].id;
+        }
+
+        // 6. Save song metadata
+
 
         // 7. Add song to playlist if not already there
         await database.query(
@@ -368,6 +383,8 @@ router.post("/DeleteSong", async (req, res) => {
     console.log(song_id)
 
     const session = await cache.get(`user${user_id}`)
+
+
 
     database.query("DELETE FROM usersongs WHERE user_id = $1 AND song_id = $2", [user_id, song_id], async (err, results) => {
         if (err) {
