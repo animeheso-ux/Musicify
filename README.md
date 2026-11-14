@@ -3,6 +3,7 @@
 A full-stack music streaming application where users can upload, manage, and listen to their own music.
 
 **Live Demo:** https://musicify-tan.vercel.app/
+## NOTE : BACKEND MIGHT TAKE A WHILE TO LOAD SO PLEASE BE PATIENT!
 
 ## Features
 - User authentication
